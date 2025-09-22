@@ -1,0 +1,63 @@
+import { useEffect, useState } from "react";
+import Web3 from "web3";
+import { CONTACT_ABI } from "./config"
+import './App.css';
+
+function App() {
+  const [account, setAccount] = useState(); // state variable to set account.
+  const [contactList, setContactList] = useState();
+  const [contacts, setContacts] = useState([])
+
+  useEffect(() => {
+    async function load() {
+      const web3 = new Web3(Web3.givenProvider || 'http://localhost:7545');
+      const accounts = await web3.eth.requestAccounts();
+      //    const nw = await web3.eth.net.getNetworkType();
+      setAccount(accounts[0]);
+
+      // Instantiate smart contract using ABI and address.
+      const contactList = new web3.eth.Contract(CONTACT_ABI, "0x07F865532dc590212a6d0c0d327c780b0cA52Aef");
+
+      // set contact list to state variable.
+      setContactList(contactList);
+
+      console.log(contactList);
+
+      // Then we get total number of contacts for iteration
+      const counter = await contactList.methods.count().call();
+
+      // iterate through the amount of time of counter
+      for (var i = 1; i <= counter; i++) {
+        // call the contacts method to get that particular contact from smart contract
+        const contact = await contactList.methods.contacts(i).call();
+        // add recently fetched contact to state variable.
+        setContacts((contacts) => [...contacts, contact]);
+      }
+
+    }
+
+    load();
+  }, []);
+
+  console.log(account);
+
+  return (
+    <div className="container">
+      Your account is: {account}
+
+      <h1>Contacts</h1>
+      <ul>
+        {
+          Object.keys(contacts).map((contact, index) => (
+            <li key={`${contacts[index].name}-${index}`}>
+              <h4>{contacts[index].name}</h4>
+              <span><b>Phone: </b>{contacts[index].phone}</span>
+            </li>
+          ))
+        }
+      </ul> 
+    </div>
+  );
+}
+
+export default App;
